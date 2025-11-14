@@ -722,12 +722,12 @@ function getRandomQuestionsFromFallback(count: number): Question[] {
   const moreOrLess = fallbackQuestions.filter(q => q.type === 'more-or-less');
   const numerical = fallbackQuestions.filter(q => q.type === 'numerical');
   
-  // Calculate distribution for a balanced mix
-  // Target: 50% multiple-choice, 20% true-false, 20% more-or-less, 10% numerical
-  const targetMC = Math.floor(count * 0.5);
-  const targetTF = Math.floor(count * 0.2);
-  const targetMOL = Math.floor(count * 0.2);
-  const targetNum = count - targetMC - targetTF - targetMOL; // remainder
+  // Calculate distribution optimized for fun and engagement
+  // Target: 40% multiple-choice, 25% true-false, 30% more-or-less, 5% numerical
+  const targetMC = Math.floor(count * 0.4);   // 40% - core gameplay
+  const targetTF = Math.floor(count * 0.25);  // 25% - quick & engaging
+  const targetMOL = Math.floor(count * 0.3);  // 30% - most fun, creates debates
+  const targetNum = count - targetMC - targetTF - targetMOL; // ~5% - keep minimal
   
   // Shuffle each category
   const shuffleMC = [...multipleChoice].sort(() => Math.random() - 0.5);

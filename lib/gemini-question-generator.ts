@@ -26,11 +26,11 @@ export async function generateQuestionsWithGemini(
 
   const { count, categories, difficulties } = params;
 
-  // Calculate distribution for a balanced mix
-  const targetMC = Math.floor(count * 0.5);
-  const targetTF = Math.floor(count * 0.2);
-  const targetMOL = Math.floor(count * 0.2);
-  const targetNum = count - targetMC - targetTF - targetMOL;
+  // Calculate distribution optimized for fun and engagement
+  const targetMC = Math.floor(count * 0.4);   // 40% - core gameplay
+  const targetTF = Math.floor(count * 0.25);  // 25% - quick & engaging
+  const targetMOL = Math.floor(count * 0.3);  // 30% - most fun, creates debates
+  const targetNum = count - targetMC - targetTF - targetMOL; // ~5% - keep minimal
 
   const prompt = createPrompt({
     multipleChoice: targetMC,
