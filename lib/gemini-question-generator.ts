@@ -72,7 +72,6 @@ export async function generateQuestionsWithGemini(
     if (!response.ok) {
       const errorText = await response.text();
       logger.error('Gemini API error', { status: response.status, error: errorText });
-      console.error('Gemini API error details:', errorText);
       throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
