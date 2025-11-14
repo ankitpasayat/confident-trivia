@@ -9,9 +9,6 @@ on:
 jobs:
   unit-and-component-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./game
 
     steps:
       - name: Checkout code
@@ -22,7 +19,6 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './game/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
@@ -42,16 +38,13 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: ./game/coverage/coverage-final.json
+          files: ./coverage/coverage-final.json
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
 
   e2e-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./game
 
     steps:
       - name: Checkout code
@@ -62,7 +55,6 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './game/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
@@ -78,14 +70,11 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: ./game/playwright-report/
+          path: playwright-report/
           retention-days: 30
 
   lint-and-typecheck:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./game
 
     steps:
       - name: Checkout code
@@ -96,7 +85,6 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './game/package-lock.json'
 
       - name: Install dependencies
         run: npm ci

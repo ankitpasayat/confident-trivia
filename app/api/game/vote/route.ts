@@ -3,6 +3,9 @@ import { submitVote } from '@/lib/game-manager';
 import { broadcastUpdate } from '../events/route';
 import { log } from '@/lib/logger';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     let body;
