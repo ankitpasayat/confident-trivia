@@ -150,14 +150,50 @@ export default function GamePage() {
             <div className="bg-gray-800/50 rounded-2xl p-6 mb-6">
               <h3 className="text-lg font-semibold mb-4">Select Token (Confidence)</h3>
               <div className="grid grid-cols-5 gap-2">
-                {currentPlayer.availableTokens.sort((a, b) => a - b).map(token => (
-                  <button key={token} onClick={() => setSelectedToken(token)}
-                    className={`aspect-square rounded-xl font-bold text-xl ${
-                      selectedToken === token ? 'bg-green-500 scale-110' : 'bg-gray-700 hover:bg-gray-600'
-                    }`}>
-                    {token}
-                  </button>
-                ))}
+                {currentPlayer.availableTokens.sort((a, b) => a - b).map(token => {
+                  const getTokenColors = (val: number): [string, string] => {
+                    switch(val) {
+                      case 1: return ['#dc2626', '#991b1b'];
+                      case 2: return ['#ea580c', '#9a3412'];
+                      case 3: return ['#f59e0b', '#b45309'];
+                      case 4: return ['#eab308', '#a16207'];
+                      case 5: return ['#84cc16', '#4d7c0f'];
+                      case 6: return ['#10b981', '#047857'];
+                      case 7: return ['#06b6d4', '#0e7490'];
+                      case 8: return ['#3b82f6', '#1d4ed8'];
+                      case 9: return ['#a855f7', '#7e22ce'];
+                      case 10: return ['#ec4899', '#be185d'];
+                      default: return ['#6b7280', '#374151'];
+                    }
+                  };
+                  
+                  const [color1, color2] = getTokenColors(token);
+                  
+                  return (
+                    <button key={token} onClick={() => setSelectedToken(token)}
+                      className={`aspect-square rounded-full font-bold text-xl relative border-[6px] shadow-lg transition-all ${
+                        selectedToken === token 
+                          ? 'scale-110 border-white' 
+                          : 'border-white/90 hover:scale-105 hover:border-white'
+                      }`}
+                      style={{
+                        boxShadow: selectedToken === token 
+                          ? '0 0 25px rgba(255, 255, 255, 0.6), inset 0 3px 8px rgba(255, 255, 255, 0.4), inset 0 -3px 8px rgba(0, 0, 0, 0.3)' 
+                          : 'inset 0 3px 6px rgba(255, 255, 255, 0.3), inset 0 -3px 6px rgba(0, 0, 0, 0.4), 0 6px 12px rgba(0, 0, 0, 0.6)',
+                        background: selectedToken === token 
+                          ? `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), transparent 50%), linear-gradient(135deg, ${color1}, ${color2})`
+                          : `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2), transparent 50%), linear-gradient(135deg, ${color1}, ${color2})`
+                      }}>
+                      <span className="relative z-10 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">{token}</span>
+                      {/* Edge notches to simulate poker chip texture */}
+                      <div className="absolute inset-0 rounded-full" style={{
+                        background: `repeating-conic-gradient(from 0deg, transparent 0deg 8deg, rgba(255, 255, 255, 0.15) 8deg 10deg)`
+                      }}></div>
+                      {/* Center ring detail */}
+                      <div className="absolute inset-[30%] rounded-full border-2 border-white/20"></div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <button onClick={() => apiCall('vote', { sessionId, playerId, answer: selectedAnswer, token: selectedToken })}
