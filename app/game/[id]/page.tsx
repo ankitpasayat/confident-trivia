@@ -120,6 +120,8 @@ export default function GamePage() {
   // Voting Phase
   if (session.currentPhase === 'voting' && session.currentQuestion) {
     const hasVoted = session.votes.some(v => v.playerId === playerId);
+    const question = session.currentQuestion;
+    const questionType = 'type' in question ? question.type : 'multiple-choice';
     
     return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black p-4 pb-32">
       {connectionIndicator}
@@ -132,17 +134,74 @@ export default function GamePage() {
         </div>
 
         <div className="bg-gray-800/50 rounded-2xl p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">{session.currentQuestion.text}</h2>
-          <div className="space-y-3">
-            {session.currentQuestion.options.map((option, index) => (
-              <button key={index} onClick={() => setSelectedAnswer(index)} disabled={hasVoted}
-                className={`w-full p-4 rounded-xl text-left font-medium transition-all ${
-                  selectedAnswer === index ? 'bg-blue-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
+          <h2 className="text-xl font-semibold mb-4">{question.text}</h2>
+          
+          {/* Multiple Choice */}
+          {questionType === 'multiple-choice' && 'options' in question && (
+            <div className="space-y-3">
+              {question.options.map((option, index) => (
+                <button key={index} onClick={() => setSelectedAnswer(index)} disabled={hasVoted}
+                  className={`w-full p-4 rounded-xl text-left font-medium transition-all ${
+                    selectedAnswer === index ? 'bg-blue-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
+                  } ${hasVoted ? 'opacity-50' : ''}`}>
+                  {String.fromCharCode(65 + index)}. {option}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* True/False */}
+          {questionType === 'true-false' && (
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={() => setSelectedAnswer(1)} disabled={hasVoted}
+                className={`p-6 rounded-xl font-bold text-xl transition-all ${
+                  selectedAnswer === 1 ? 'bg-green-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
                 } ${hasVoted ? 'opacity-50' : ''}`}>
-                {String.fromCharCode(65 + index)}. {option}
+                TRUE
               </button>
-            ))}
-          </div>
+              <button onClick={() => setSelectedAnswer(0)} disabled={hasVoted}
+                className={`p-6 rounded-xl font-bold text-xl transition-all ${
+                  selectedAnswer === 0 ? 'bg-red-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
+                } ${hasVoted ? 'opacity-50' : ''}`}>
+                FALSE
+              </button>
+            </div>
+          )}
+
+          {/* More or Less */}
+          {questionType === 'more-or-less' && 'option1' in question && 'option2' in question && (
+            <div className="space-y-4">
+              <p className="text-center text-sm text-gray-400 mb-4">Which one is more/larger?</p>
+              <button onClick={() => setSelectedAnswer(0)} disabled={hasVoted}
+                className={`w-full p-6 rounded-xl font-medium text-lg transition-all ${
+                  selectedAnswer === 0 ? 'bg-purple-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
+                } ${hasVoted ? 'opacity-50' : ''}`}>
+                {question.option1}
+              </button>
+              <div className="text-center text-gray-500 text-sm font-bold">OR</div>
+              <button onClick={() => setSelectedAnswer(1)} disabled={hasVoted}
+                className={`w-full p-6 rounded-xl font-medium text-lg transition-all ${
+                  selectedAnswer === 1 ? 'bg-purple-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
+                } ${hasVoted ? 'opacity-50' : ''}`}>
+                {question.option2}
+              </button>
+            </div>
+          )}
+
+          {/* Numerical */}
+          {questionType === 'numerical' && (
+            <div>
+              <p className="text-sm text-gray-400 mb-3">Enter your answer {'unit' in question && question.unit ? `(in ${question.unit})` : ''}:</p>
+              <input
+                type="number"
+                value={selectedAnswer === null ? '' : selectedAnswer}
+                onChange={(e) => setSelectedAnswer(e.target.value ? Number(e.target.value) : null)}
+                disabled={hasVoted}
+                placeholder="Your answer..."
+                className={`w-full p-4 rounded-xl bg-gray-700/50 border-2 border-gray-600 focus:border-blue-500 focus:outline-none text-lg ${hasVoted ? 'opacity-50' : ''}`}
+              />
+            </div>
+          )}
         </div>
 
         {!hasVoted && (
@@ -216,7 +275,46 @@ export default function GamePage() {
 
   // Reveal Phase
   if (session.currentPhase === 'reveal' && session.currentQuestion) {
-    const correctAnswer = session.currentQuestion.correctAnswer;
+    const question = session.currentQuestion;
+    const questionType = 'type' in question ? question.type : 'multiple-choice';
+    const correctAnswer = question.correctAnswer;
+    
+    // Helper to format the correct answer display
+    const getCorrectAnswerDisplay = () => {
+      if (questionType === 'multiple-choice' && 'options' in question && typeof correctAnswer === 'number') {
+        return `${String.fromCharCode(65 + correctAnswer)}. ${question.options[correctAnswer]}`;
+      } else if (questionType === 'true-false') {
+        return correctAnswer ? 'TRUE' : 'FALSE';
+      } else if (questionType === 'more-or-less' && 'option1' in question && 'option2' in question) {
+        return correctAnswer === 0 ? question.option1 : question.option2;
+      } else if (questionType === 'numerical' && 'unit' in question) {
+        return `${correctAnswer}${question.unit ? ' ' + question.unit : ''}`;
+      }
+      return String(correctAnswer);
+    };
+
+    // Helper to format player's answer
+    const getPlayerAnswerDisplay = (vote: any) => {
+      if (questionType === 'multiple-choice') {
+        return `${String.fromCharCode(65 + (vote.answer as number))}`;
+      } else if (questionType === 'true-false') {
+        return vote.answer ? 'TRUE' : 'FALSE';
+      } else if (questionType === 'more-or-less' && 'option1' in question && 'option2' in question) {
+        return vote.answer === 0 ? question.option1.substring(0, 30) : question.option2.substring(0, 30);
+      } else if (questionType === 'numerical' && 'unit' in question) {
+        return `${vote.answer}${question.unit ? ' ' + question.unit : ''}`;
+      }
+      return String(vote.answer);
+    };
+
+    // Helper to check if answer is correct
+    const isCorrect = (vote: any) => {
+      if (questionType === 'numerical' && typeof vote.answer === 'number' && typeof correctAnswer === 'number') {
+        const range = ('acceptableRange' in question ? question.acceptableRange : correctAnswer * 0.1) || 0;
+        return Math.abs(vote.answer - correctAnswer) <= range;
+      }
+      return vote.answer === correctAnswer;
+    };
     
     return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black p-4">
       {connectionIndicator}
@@ -227,14 +325,14 @@ export default function GamePage() {
         <div className="bg-green-500/20 border-2 border-green-500 rounded-2xl p-6 mb-6">
           <p className="text-sm text-green-300 mb-2">Correct Answer:</p>
           <p className="text-xl font-semibold">
-            {String.fromCharCode(65 + correctAnswer)}. {session.currentQuestion.options[correctAnswer]}
+            {getCorrectAnswerDisplay()}
           </p>
-          <p className="text-sm text-gray-300 mt-4">{session.currentQuestion.explanation}</p>
+          <p className="text-sm text-gray-300 mt-4">{question.explanation}</p>
         </div>
         <div className="space-y-3 mb-6">
           {session.players.map(player => {
             const vote = session.votes.find(v => v.playerId === player.id);
-            const wasCorrect = vote && vote.answer === correctAnswer;
+            const wasCorrect = vote && isCorrect(vote);
             return (
               <div key={player.id} className={`p-4 rounded-xl ${wasCorrect ? 'bg-green-500/20 border-2 border-green-500' : 'bg-gray-800/50'}`}>
                 <div className="flex items-center justify-between">
@@ -242,7 +340,7 @@ export default function GamePage() {
                     <div className="w-8 h-8 rounded-full" style={{ backgroundColor: player.color }}></div>
                     <div>
                       <p className="font-medium">{player.name}</p>
-                      {vote && <p className="text-sm text-gray-400">Token {vote.token} on {String.fromCharCode(65 + vote.answer)}</p>}
+                      {vote && <p className="text-sm text-gray-400">Token {vote.token} on {getPlayerAnswerDisplay(vote)}</p>}
                     </div>
                   </div>
                   <div className="text-right">

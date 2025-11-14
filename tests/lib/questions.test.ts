@@ -19,15 +19,28 @@ describe('Questions', () => {
       const result = getRandomQuestions(3);
       result.forEach(question => {
         expect(question).toHaveProperty('id');
+        expect(question).toHaveProperty('type');
         expect(question).toHaveProperty('text');
         expect(question).toHaveProperty('category');
         expect(question).toHaveProperty('difficulty');
-        expect(question).toHaveProperty('options');
         expect(question).toHaveProperty('correctAnswer');
         expect(question).toHaveProperty('explanation');
-        expect(question.options).toHaveLength(4);
-        expect(question.correctAnswer).toBeGreaterThanOrEqual(0);
-        expect(question.correctAnswer).toBeLessThan(4);
+        
+        // Validate based on question type
+        if (question.type === 'multiple-choice') {
+          expect(question).toHaveProperty('options');
+          expect((question as any).options).toHaveLength(4);
+          expect(question.correctAnswer).toBeGreaterThanOrEqual(0);
+          expect(question.correctAnswer).toBeLessThan(4);
+        } else if (question.type === 'true-false') {
+          expect(typeof question.correctAnswer).toBe('boolean');
+        } else if (question.type === 'more-or-less') {
+          expect(question).toHaveProperty('option1');
+          expect(question).toHaveProperty('option2');
+          expect([0, 1]).toContain(question.correctAnswer);
+        } else if (question.type === 'numerical') {
+          expect(typeof question.correctAnswer).toBe('number');
+        }
       });
     });
 
@@ -77,17 +90,53 @@ describe('Questions', () => {
       expect(difficulties.size).toBeGreaterThanOrEqual(2);
     });
 
-    it('should have all questions with 4 options', () => {
-      questions.forEach(question => {
-        expect(question.options).toHaveLength(4);
-      });
-    });
-
-    it('should have all questions with valid correct answers', () => {
-      questions.forEach(question => {
+    it('should have multiple-choice questions with 4 options', () => {
+      const mcQuestions = questions.filter(q => q.type === 'multiple-choice');
+      expect(mcQuestions.length).toBeGreaterThan(0);
+      mcQuestions.forEach(question => {
+        expect((question as any).options).toHaveLength(4);
         expect(question.correctAnswer).toBeGreaterThanOrEqual(0);
         expect(question.correctAnswer).toBeLessThan(4);
       });
+    });
+
+    it('should have true-false questions', () => {
+      const tfQuestions = questions.filter(q => q.type === 'true-false');
+      expect(tfQuestions.length).toBeGreaterThan(0);
+      tfQuestions.forEach(question => {
+        expect(typeof question.correctAnswer).toBe('boolean');
+      });
+    });
+
+    it('should have more-or-less questions', () => {
+      const molQuestions = questions.filter(q => q.type === 'more-or-less');
+      expect(molQuestions.length).toBeGreaterThan(0);
+      molQuestions.forEach(question => {
+        expect((question as any).option1).toBeDefined();
+        expect((question as any).option2).toBeDefined();
+        expect([0, 1]).toContain(question.correctAnswer);
+      });
+    });
+
+    it('should have numerical questions', () => {
+      const numQuestions = questions.filter(q => q.type === 'numerical');
+      expect(numQuestions.length).toBeGreaterThan(0);
+      numQuestions.forEach(question => {
+        expect(typeof question.correctAnswer).toBe('number');
+      });
+    });
+
+    it('should have balanced distribution of question types', () => {
+      const mcCount = questions.filter(q => q.type === 'multiple-choice').length;
+      const tfCount = questions.filter(q => q.type === 'true-false').length;
+      const molCount = questions.filter(q => q.type === 'more-or-less').length;
+      const numCount = questions.filter(q => q.type === 'numerical').length;
+      
+      // Verify we have a good mix
+      expect(mcCount).toBeGreaterThan(tfCount); // More multiple-choice
+      expect(tfCount).toBeGreaterThan(0); // Some true-false
+      expect(molCount).toBeGreaterThan(0); // Some more-or-less
+      expect(numCount).toBeGreaterThan(0); // Some numerical
     });
   });
 });

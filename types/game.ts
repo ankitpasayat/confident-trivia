@@ -13,19 +13,46 @@ export interface Player {
   isConnected: boolean;
 }
 
-export interface Question {
+export type QuestionType = 'multiple-choice' | 'true-false' | 'more-or-less' | 'numerical';
+
+export interface BaseQuestion {
   id: string;
   text: string;
   category: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  options: string[];
-  correctAnswer: number; // index of correct option (0-3)
   explanation: string;
 }
 
+export interface MultipleChoiceQuestion extends BaseQuestion {
+  type: 'multiple-choice';
+  options: string[];
+  correctAnswer: number; // index of correct option (0-3)
+}
+
+export interface TrueFalseQuestion extends BaseQuestion {
+  type: 'true-false';
+  correctAnswer: boolean;
+}
+
+export interface MoreOrLessQuestion extends BaseQuestion {
+  type: 'more-or-less';
+  option1: string; // first thing to compare
+  option2: string; // second thing to compare
+  correctAnswer: 0 | 1; // 0 for option1, 1 for option2
+}
+
+export interface NumericalQuestion extends BaseQuestion {
+  type: 'numerical';
+  correctAnswer: number;
+  unit?: string; // optional unit (e.g., "km", "years", "%")
+  acceptableRange?: number; // how close answer needs to be to count as correct (default: 10%)
+}
+
+export type Question = MultipleChoiceQuestion | TrueFalseQuestion | MoreOrLessQuestion | NumericalQuestion;
+
 export interface PlayerVote {
   playerId: string;
-  answer: number;
+  answer: number | boolean; // number for multiple-choice/numerical/more-or-less (0 or 1), boolean for true-false
   token: number;
   submittedAt: number;
 }

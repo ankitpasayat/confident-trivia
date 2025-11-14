@@ -134,8 +134,30 @@ export function startGame(sessionId: string): GameSession | null {
   return session;
 }
 
+// Helper function to check if answer is correct
+function isAnswerCorrect(question: Question, answer: number | boolean): boolean {
+  if ('type' in question) {
+    switch (question.type) {
+      case 'multiple-choice':
+        return typeof answer === 'number' && answer === question.correctAnswer;
+      case 'true-false':
+        return typeof answer === 'boolean' && answer === question.correctAnswer;
+      case 'more-or-less':
+        return typeof answer === 'number' && answer === question.correctAnswer;
+      case 'numerical':
+        if (typeof answer !== 'number') return false;
+        const range = question.acceptableRange || (question.correctAnswer * 0.1);
+        return Math.abs(answer - question.correctAnswer) <= range;
+      default:
+        return false;
+    }
+  }
+  // Legacy multiple-choice questions without type field
+  return typeof answer === 'number' && answer === (question as any).correctAnswer;
+}
+
 // Submit a vote
-export function submitVote(sessionId: string, playerId: string, answer: number, token: number): GameSession | null {
+export function submitVote(sessionId: string, playerId: string, answer: number | boolean, token: number): GameSession | null {
   const session = gameSessions.get(sessionId);
   if (!session || session.currentPhase !== 'voting') return null;
 
@@ -158,7 +180,6 @@ export function submitVote(sessionId: string, playerId: string, answer: number, 
   if (session.votes.length === session.players.length) {
     session.currentPhase = 'reveal';
     // Process results immediately when all votes are in
-    const correctAnswer = session.currentQuestion!.correctAnswer;
     session.votes.forEach(vote => {
       const player = session.players.find(p => p.id === vote.playerId);
       if (!player) return;
@@ -167,7 +188,7 @@ export function submitVote(sessionId: string, playerId: string, answer: number, 
       player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
 
       // If answer is correct, add to score and used tokens
-      if (vote.answer === correctAnswer) {
+      if (session.currentQuestion && isAnswerCorrect(session.currentQuestion, vote.answer)) {
         player.score += vote.token;
         player.usedTokens.push(vote.token);
       }
@@ -185,7 +206,6 @@ export function processRoundResults(sessionId: string): GameSession | null {
   // If not in reveal phase yet, change to reveal and process results
   if (session.currentPhase === 'voting') {
     session.currentPhase = 'reveal';
-    const correctAnswer = session.currentQuestion.correctAnswer;
 
     // Process each vote
     session.votes.forEach(vote => {
@@ -196,7 +216,7 @@ export function processRoundResults(sessionId: string): GameSession | null {
       player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
 
       // If answer is correct, add to score and used tokens
-      if (vote.answer === correctAnswer) {
+      if (isAnswerCorrect(session.currentQuestion!, vote.answer)) {
         player.score += vote.token;
         player.usedTokens.push(vote.token);
       }

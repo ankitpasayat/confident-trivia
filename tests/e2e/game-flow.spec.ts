@@ -53,8 +53,22 @@ test.describe('Game Flow E2E Tests', () => {
     await expect(page2.locator('text=/Select Token/')).toBeVisible({ timeout: 10000 });
 
     // Select answer and token for both players
-    // Alice votes
-    await page.locator('button').filter({ hasText: /^A\./ }).first().click();
+    // Alice votes - handle different question types
+    const mcButton = page.locator('button').filter({ hasText: /^A\./ }).first();
+    const trueButton = page.locator('button:has-text("TRUE")').first();
+    const numericalInput = page.locator('input[type="number"]').first();
+    
+    if (await mcButton.isVisible().catch(() => false)) {
+      await mcButton.click();
+    } else if (await trueButton.isVisible().catch(() => false)) {
+      await trueButton.click();
+    } else if (await numericalInput.isVisible().catch(() => false)) {
+      await numericalInput.fill('42');
+    } else {
+      // More-or-less question - click first option
+      await page.locator('button').filter({ hasText: /(?=.*\w)(?!.*token|select|submit|vote)/i }).first().click();
+    }
+    
     await page.waitForTimeout(500); // Allow React state to update
     const aliceTokenButton = page.locator('button').filter({ hasText: /^5$/ }).first();
     await expect(aliceTokenButton).toBeVisible({ timeout: 5000 });
@@ -63,8 +77,22 @@ test.describe('Game Flow E2E Tests', () => {
     await expect(page.locator('button:has-text("Submit Vote")')).toBeVisible({ timeout: 5000 });
     await page.click('button:has-text("Submit Vote")');
 
-    // Bob votes
-    await page2.locator('button').filter({ hasText: /^A\./ }).first().click();
+    // Bob votes - handle different question types
+    const mcButton2 = page2.locator('button').filter({ hasText: /^A\./ }).first();
+    const falseButton = page2.locator('button:has-text("FALSE")').first();
+    const numericalInput2 = page2.locator('input[type="number"]').first();
+    
+    if (await mcButton2.isVisible().catch(() => false)) {
+      await mcButton2.click();
+    } else if (await falseButton.isVisible().catch(() => false)) {
+      await falseButton.click();
+    } else if (await numericalInput2.isVisible().catch(() => false)) {
+      await numericalInput2.fill('100');
+    } else {
+      // More-or-less question - click second option
+      await page2.locator('button').filter({ hasText: /(?=.*\w)(?!.*token|select|submit|vote)/i }).nth(1).click();
+    }
+    
     await page2.waitForTimeout(500); // Allow React state to update
     const bobTokenButton = page2.locator('button').filter({ hasText: /^7$/ }).first();
     await expect(bobTokenButton).toBeVisible({ timeout: 5000 });
@@ -72,6 +100,7 @@ test.describe('Game Flow E2E Tests', () => {
     await page2.waitForTimeout(500); // Allow button text to update
     await expect(page2.locator('button:has-text("Submit Vote")')).toBeVisible({ timeout: 5000 });
     await page2.click('button:has-text("Submit Vote")');
+
 
     // Should show reveal phase with results
     await expect(page.locator('text=/Correct Answer/i')).toBeVisible({ timeout: 10000 });
@@ -281,8 +310,24 @@ test.describe('Game Flow E2E Tests', () => {
       // Both players vote
       const tokenValue = Math.min(round, 10); // Use token 1-5 for rounds 1-5
       
-      // Alice votes
-      await page.locator('button').filter({ hasText: /^A\./ }).first().click();
+      // Alice votes - handle different question types
+      // Check if it's multiple choice (has A., B., C., D.)
+      const mcButton = page.locator('button').filter({ hasText: /^A\./ }).first();
+      const trueButton = page.locator('button:has-text("TRUE")').first();
+      const numericalInput = page.locator('input[type="number"]').first();
+      const moreOrLessButton = page.locator('button').filter({ hasText: /^(?!.*token)/ }).first(); // Any answer button
+      
+      if (await mcButton.isVisible().catch(() => false)) {
+        await mcButton.click();
+      } else if (await trueButton.isVisible().catch(() => false)) {
+        await trueButton.click();
+      } else if (await numericalInput.isVisible().catch(() => false)) {
+        await numericalInput.fill('42');
+      } else {
+        // More-or-less question - click first option
+        await page.locator('button').filter({ hasText: /(?=.*\w)(?!.*token|select|submit|vote)/i }).first().click();
+      }
+      
       await page.waitForTimeout(500); // Allow React state to update
       const aliceTokenButton = page.locator('button').filter({ hasText: new RegExp(`^${tokenValue}$`) }).first();
       await expect(aliceTokenButton).toBeVisible({ timeout: 5000 });
@@ -291,8 +336,22 @@ test.describe('Game Flow E2E Tests', () => {
       await expect(page.locator('button:has-text("Submit Vote")')).toBeVisible({ timeout: 5000 });
       await page.click('button:has-text("Submit Vote")');
 
-      // Bob votes
-      await page2.locator('button').filter({ hasText: /^A\./ }).first().click();
+      // Bob votes - handle different question types
+      const mcButton2 = page2.locator('button').filter({ hasText: /^A\./ }).first();
+      const falseButton = page2.locator('button:has-text("FALSE")').first();
+      const numericalInput2 = page2.locator('input[type="number"]').first();
+      
+      if (await mcButton2.isVisible().catch(() => false)) {
+        await mcButton2.click();
+      } else if (await falseButton.isVisible().catch(() => false)) {
+        await falseButton.click();
+      } else if (await numericalInput2.isVisible().catch(() => false)) {
+        await numericalInput2.fill('100');
+      } else {
+        // More-or-less question - click second option
+        await page2.locator('button').filter({ hasText: /(?=.*\w)(?!.*token|select|submit|vote)/i }).nth(1).click();
+      }
+      
       await page2.waitForTimeout(500); // Allow React state to update
       const bobTokenButton = page2.locator('button').filter({ hasText: new RegExp(`^${11 - tokenValue}$`) }).first();
       await expect(bobTokenButton).toBeVisible({ timeout: 5000 });
