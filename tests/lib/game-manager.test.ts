@@ -235,7 +235,7 @@ describe('Game Manager - Core Functionality', () => {
       const startedSession = startGame(session.id);
 
       const currentQuestion = startedSession?.currentQuestion;
-      const wrongAnswer = (currentQuestion!.correctAnswer + 1) % 4;
+      const wrongAnswer = (typeof currentQuestion!.correctAnswer === 'number' ? currentQuestion!.correctAnswer + 1 : 1) % 4;
 
       const gameSession = getSession(session.id);
       if (gameSession) {
@@ -430,6 +430,175 @@ describe('Game Manager - Core Functionality', () => {
       expect(() => {
         cleanupInactiveSessions(60);
       }).not.toThrow();
+    });
+  });
+
+  describe('Question Type Testing', () => {
+    it('should handle true-false questions correctly', () => {
+      const { session, code, hostId } = createGameSession('Host');
+      const player2Result = joinGameSession(code, 'Player2');
+      startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      // Manually set a true-false question
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'tf-1',
+          text: 'Is the sky blue?',
+          category: 'General',
+          difficulty: 'easy',
+          explanation: 'Yes, the sky is blue.',
+          type: 'true-false',
+          correctAnswer: true
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit correct answer
+        submitVote(session.id, hostId, true, 5);
+        
+        // Process results while still in voting phase
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      expect(player?.score).toBeGreaterThan(0);
+    });
+
+    it('should handle more-or-less questions correctly', () => {
+      const { session, code, hostId } = createGameSession('Host');
+      const player2Result = joinGameSession(code, 'Player2');
+      startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      // Manually set a more-or-less question
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'mol-1',
+          text: 'Which is larger?',
+          category: 'Comparison',
+          difficulty: 'medium',
+          explanation: 'Option 2 is larger.',
+          type: 'more-or-less',
+          option1: 'Small thing',
+          option2: 'Large thing',
+          correctAnswer: 1
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit correct answer
+        submitVote(session.id, hostId, 1, 7);
+        
+        // Process results while still in voting phase
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      expect(player?.score).toBeGreaterThan(0);
+    });
+
+    it('should handle numerical questions with exact answer', () => {
+      const { session, code, hostId } = createGameSession('Host');
+      const player2Result = joinGameSession(code, 'Player2');
+      startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      // Manually set a numerical question
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'num-1',
+          text: 'What is 10 + 10?',
+          category: 'Math',
+          difficulty: 'easy',
+          explanation: 'The answer is 20.',
+          type: 'numerical',
+          correctAnswer: 20,
+          unit: 'number'
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit correct answer
+        submitVote(session.id, hostId, 20, 6);
+        
+        // Process results while still in voting phase
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      expect(player?.score).toBeGreaterThan(0);
+    });
+
+    it('should handle numerical questions with acceptable range', () => {
+      const { session, code, hostId } = createGameSession('Host');
+      const player2Result = joinGameSession(code, 'Player2');
+      startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      // Manually set a numerical question
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'num-2',
+          text: 'How many meters in a kilometer?',
+          category: 'Math',
+          difficulty: 'easy',
+          explanation: 'There are 1000 meters in a kilometer.',
+          type: 'numerical',
+          correctAnswer: 1000,
+          unit: 'meters',
+          acceptableRange: 50
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit answer within range
+        submitVote(session.id, hostId, 1020, 8);
+        
+        // Process results while still in voting phase
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      expect(player?.score).toBeGreaterThan(0);
+    });
+
+    it('should reject numerical answers outside acceptable range', () => {
+      const { session, code, hostId } = createGameSession('Host');
+      joinGameSession(code, 'Player2');
+      startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      // Manually set a numerical question
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'num-3',
+          text: 'How many meters in a kilometer?',
+          category: 'Math',
+          difficulty: 'easy',
+          explanation: 'There are 1000 meters in a kilometer.',
+          type: 'numerical',
+          correctAnswer: 1000,
+          unit: 'meters',
+          acceptableRange: 50
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit answer outside range
+        submitVote(session.id, hostId, 2000, 9);
+        
+        // Process results while still in voting phase
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      expect(player?.score).toBe(0);
     });
   });
 });

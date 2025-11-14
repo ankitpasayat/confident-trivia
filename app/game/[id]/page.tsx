@@ -12,7 +12,7 @@ export default function GamePage() {
   const sessionId = params.id as string;
   
   const [playerId, setPlayerId] = useState<string>('');
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | boolean | null>(null);
   const [selectedToken, setSelectedToken] = useState<number | null>(null);
 
   useEffect(() => {
@@ -153,15 +153,15 @@ export default function GamePage() {
           {/* True/False */}
           {questionType === 'true-false' && (
             <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => setSelectedAnswer(1)} disabled={hasVoted}
+              <button onClick={() => setSelectedAnswer(true)} disabled={hasVoted}
                 className={`p-6 rounded-xl font-bold text-xl transition-all ${
-                  selectedAnswer === 1 ? 'bg-green-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
+                  selectedAnswer === true ? 'bg-green-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
                 } ${hasVoted ? 'opacity-50' : ''}`}>
                 TRUE
               </button>
-              <button onClick={() => setSelectedAnswer(0)} disabled={hasVoted}
+              <button onClick={() => setSelectedAnswer(false)} disabled={hasVoted}
                 className={`p-6 rounded-xl font-bold text-xl transition-all ${
-                  selectedAnswer === 0 ? 'bg-red-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
+                  selectedAnswer === false ? 'bg-red-500 text-white' : 'bg-gray-700/50 hover:bg-gray-700'
                 } ${hasVoted ? 'opacity-50' : ''}`}>
                 FALSE
               </button>
@@ -194,7 +194,7 @@ export default function GamePage() {
               <p className="text-sm text-gray-400 mb-3">Enter your answer {'unit' in question && question.unit ? `(in ${question.unit})` : ''}:</p>
               <input
                 type="number"
-                value={selectedAnswer === null ? '' : selectedAnswer}
+                value={selectedAnswer === null || typeof selectedAnswer === 'boolean' ? '' : selectedAnswer}
                 onChange={(e) => setSelectedAnswer(e.target.value ? Number(e.target.value) : null)}
                 disabled={hasVoted}
                 placeholder="Your answer..."
@@ -298,7 +298,8 @@ export default function GamePage() {
       if (questionType === 'multiple-choice') {
         return `${String.fromCharCode(65 + (vote.answer as number))}`;
       } else if (questionType === 'true-false') {
-        return vote.answer ? 'TRUE' : 'FALSE';
+        // Handle both boolean and number formats (for backwards compatibility)
+        return (typeof vote.answer === 'boolean' ? vote.answer : vote.answer === 1) ? 'TRUE' : 'FALSE';
       } else if (questionType === 'more-or-less' && 'option1' in question && 'option2' in question) {
         return vote.answer === 0 ? question.option1.substring(0, 30) : question.option2.substring(0, 30);
       } else if (questionType === 'numerical' && 'unit' in question) {
@@ -312,6 +313,14 @@ export default function GamePage() {
       if (questionType === 'numerical' && typeof vote.answer === 'number' && typeof correctAnswer === 'number') {
         const range = ('acceptableRange' in question ? question.acceptableRange : correctAnswer * 0.1) || 0;
         return Math.abs(vote.answer - correctAnswer) <= range;
+      }
+      // Handle true/false with both boolean and number formats (backwards compatibility)
+      if (questionType === 'true-false' && typeof correctAnswer === 'boolean') {
+        if (typeof vote.answer === 'boolean') {
+          return vote.answer === correctAnswer;
+        }
+        // Legacy: handle number format (1 = true, 0 = false)
+        return vote.answer === (correctAnswer ? 1 : 0);
       }
       return vote.answer === correctAnswer;
     };
