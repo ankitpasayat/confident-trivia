@@ -129,6 +129,11 @@ async function analyzeDistribution(
 
   const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
+  if (totalQuestions === 0) {
+    console.error('\n❌ No questions were generated successfully!');
+    return;
+  }
+
   // Calculate percentages
   const percentages = {
     'multiple-choice': ((distribution['multiple-choice'] / totalQuestions) * 100).toFixed(1),
