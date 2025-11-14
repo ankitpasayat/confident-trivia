@@ -6,7 +6,7 @@ A real-time multiplayer trivia game where players bet tokens (1-10) on their ans
 
 - **Real-time multiplayer** - 2-6 players using simple 4-letter game codes
 - **Confidence-based betting** - Strategic token management
-- **AI-Generated Questions** - Fresh trivia content every game using GPT-4
+- **AI-Generated Questions** - Fresh trivia content every game using Google Gemini or GPT-4o-mini
 - **Mobile-friendly** - Optimized for phones and tablets
 - **No database required** - In-memory sessions for quick games
 
