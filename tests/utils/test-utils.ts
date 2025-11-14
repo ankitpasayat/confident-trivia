@@ -25,6 +25,7 @@ export const createMockPlayer = (overrides: Partial<Player> = {}): Player => ({
 
 export const createMockQuestion = (overrides: Partial<Question> = {}): Question => ({
   id: `question_${Date.now()}`,
+  type: 'multiple-choice',
   text: 'What is the capital of France?',
   options: ['London', 'Berlin', 'Paris', 'Madrid'],
   correctAnswer: 2,
@@ -32,7 +33,7 @@ export const createMockQuestion = (overrides: Partial<Question> = {}): Question 
   difficulty: 'easy',
   explanation: 'Paris is the capital and most populous city of France.',
   ...overrides,
-});
+} as Question);
 
 export const createMockSession = (overrides: Partial<GameSession> = {}): GameSession => {
   const hostId = 'player_host';
