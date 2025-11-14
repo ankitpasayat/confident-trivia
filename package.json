@@ -1,6 +1,20 @@
 {
   "name": "confident-trivia",
   "version": "0.1.0",
+  "description": "A real-time multiplayer trivia game where players bet tokens based on their confidence",
+  "homepage": "https://confident-trivia.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ankitpasayat/confident-trivia.git"
+  },
+  "keywords": [
+    "trivia",
+    "multiplayer",
+    "game",
+    "nextjs",
+    "real-time",
+    "confidence-betting"
+  ],
   "private": true,
   "scripts": {
     "dev": "next dev",
