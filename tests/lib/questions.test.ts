@@ -1,22 +1,45 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getRandomQuestions, getQuestionById, questions } from '@/lib/questions';
 
+// Mock the AI generators
+vi.mock('@/lib/gemini-question-generator', () => ({
+  generateQuestionsWithGemini: vi.fn(),
+}));
+
+vi.mock('@/lib/openai-question-generator', () => ({
+  generateQuestionsWithOpenAI: vi.fn(),
+}));
+
+import { generateQuestionsWithGemini } from '@/lib/gemini-question-generator';
+import { generateQuestionsWithOpenAI } from '@/lib/openai-question-generator';
+
 describe('Questions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  afterEach(() => {
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+  });
+
   describe('getRandomQuestions', () => {
-    it('should return the requested number of questions', () => {
+    it('should return the requested number of questions', async () => {
       const count = 5;
-      const result = getRandomQuestions(count);
+      const result = await getRandomQuestions(count);
       expect(result).toHaveLength(count);
     });
 
-    it('should return all questions if count exceeds available', () => {
+    it('should return all questions if count exceeds available', async () => {
       const count = questions.length + 100;
-      const result = getRandomQuestions(count);
+      const result = await getRandomQuestions(count);
       expect(result).toHaveLength(questions.length);
     });
 
-    it('should return valid question objects', () => {
-      const result = getRandomQuestions(3);
+    it('should return valid question objects', async () => {
+      const result = await getRandomQuestions(3);
       result.forEach(question => {
         expect(question).toHaveProperty('id');
         expect(question).toHaveProperty('type');
@@ -44,16 +67,130 @@ describe('Questions', () => {
       });
     });
 
-    it('should return empty array for count 0', () => {
-      const result = getRandomQuestions(0);
+    it('should return empty array for count 0', async () => {
+      const result = await getRandomQuestions(0);
       expect(result).toHaveLength(0);
     });
 
-    it('should return unique questions', () => {
-      const result = getRandomQuestions(10);
+    it('should return unique questions', async () => {
+      const result = await getRandomQuestions(10);
       const ids = result.map(q => q.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(ids.length);
+    });
+
+    it('should use Gemini API when GOOGLE_API_KEY is set', async () => {
+      process.env.GOOGLE_API_KEY = 'test-key';
+      
+      const mockQuestions = [
+        {
+          id: 'gemini_q1',
+          type: 'multiple-choice',
+          text: 'Test question',
+          category: 'Test',
+          difficulty: 'easy',
+          options: ['A', 'B', 'C', 'D'],
+          correctAnswer: 0,
+          explanation: 'Test explanation'
+        }
+      ];
+
+      (generateQuestionsWithGemini as any).mockResolvedValue(mockQuestions);
+
+      const result = await getRandomQuestions(1);
+      
+      expect(generateQuestionsWithGemini).toHaveBeenCalledWith({ count: 1 });
+      expect(result).toEqual(mockQuestions);
+    });
+
+    it('should fallback to OpenAI when Gemini fails', async () => {
+      process.env.GOOGLE_API_KEY = 'test-key';
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+      
+      const mockQuestions = [
+        {
+          id: 'openai_q1',
+          type: 'true-false',
+          text: 'Test question',
+          category: 'Test',
+          difficulty: 'easy',
+          correctAnswer: true,
+          explanation: 'Test explanation'
+        }
+      ];
+
+      (generateQuestionsWithGemini as any).mockRejectedValue(new Error('Gemini failed'));
+      (generateQuestionsWithOpenAI as any).mockResolvedValue(mockQuestions);
+
+      const result = await getRandomQuestions(1);
+      
+      expect(generateQuestionsWithGemini).toHaveBeenCalledWith({ count: 1 });
+      expect(generateQuestionsWithOpenAI).toHaveBeenCalledWith({ count: 1 });
+      expect(result).toEqual(mockQuestions);
+    });
+
+    it('should use OpenAI when only OPENAI_API_KEY is set', async () => {
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+      
+      const mockQuestions = [
+        {
+          id: 'openai_q1',
+          type: 'numerical',
+          text: 'Test question',
+          category: 'Test',
+          difficulty: 'easy',
+          correctAnswer: 42,
+          unit: 'test',
+          acceptableRange: 5,
+          explanation: 'Test explanation'
+        }
+      ];
+
+      (generateQuestionsWithOpenAI as any).mockResolvedValue(mockQuestions);
+
+      const result = await getRandomQuestions(1);
+      
+      expect(generateQuestionsWithGemini).not.toHaveBeenCalled();
+      expect(generateQuestionsWithOpenAI).toHaveBeenCalledWith({ count: 1 });
+      expect(result).toEqual(mockQuestions);
+    });
+
+    it('should fallback to local questions when OpenAI fails', async () => {
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+      
+      (generateQuestionsWithOpenAI as any).mockRejectedValue(new Error('OpenAI failed'));
+
+      const result = await getRandomQuestions(5);
+      
+      expect(generateQuestionsWithOpenAI).toHaveBeenCalledWith({ count: 5 });
+      expect(result).toHaveLength(5);
+      // Should return local questions
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0]).toHaveProperty('type');
+    });
+
+    it('should fallback to local questions when both AI services fail', async () => {
+      process.env.GOOGLE_API_KEY = 'test-key';
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+      
+      (generateQuestionsWithGemini as any).mockRejectedValue(new Error('Gemini failed'));
+      (generateQuestionsWithOpenAI as any).mockRejectedValue(new Error('OpenAI failed'));
+
+      const result = await getRandomQuestions(5);
+      
+      expect(generateQuestionsWithGemini).toHaveBeenCalled();
+      expect(generateQuestionsWithOpenAI).toHaveBeenCalled();
+      expect(result).toHaveLength(5);
+      // Should return local questions
+      expect(result[0]).toHaveProperty('id');
+    });
+
+    it('should use local questions when no API keys are set', async () => {
+      const result = await getRandomQuestions(5);
+      
+      expect(generateQuestionsWithGemini).not.toHaveBeenCalled();
+      expect(generateQuestionsWithOpenAI).not.toHaveBeenCalled();
+      expect(result).toHaveLength(5);
     });
   });
 

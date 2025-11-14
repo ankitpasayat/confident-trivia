@@ -119,12 +119,12 @@ export function getSessionByCode(code: string): GameSession | null {
 }
 
 // Start the game
-export function startGame(sessionId: string): GameSession | null {
+export async function startGame(sessionId: string): Promise<GameSession | null> {
   const session = gameSessions.get(sessionId);
   if (!session || session.currentPhase !== 'lobby' || session.players.length < 2) return null;
 
-  // Get random questions for the game
-  const questions = getRandomQuestions(session.totalRounds);
+  // Get random questions for the game (AI-generated or fallback)
+  const questions = await getRandomQuestions(session.totalRounds);
   session.questionHistory = questions;
   session.currentRound = 1;
   session.currentQuestion = questions[0];
@@ -181,22 +181,13 @@ export function submitVote(sessionId: string, playerId: string, answer: number |
     session.currentPhase = 'reveal';
     // Process results immediately when all votes are in
     
-    // For numerical questions, only closest answers win
+    // For numerical questions, award points only within acceptable range
     if (session.currentQuestion?.type === 'numerical') {
       const correctAnswer = session.currentQuestion.correctAnswer;
+      // Use 10% of the correct answer as default range (same as isCorrectAnswer function)
+      const acceptableRange = session.currentQuestion.acceptableRange || (correctAnswer * 0.1);
       
-      // Find the closest distance
-      let minDistance = Infinity;
-      session.votes.forEach(vote => {
-        if (typeof vote.answer === 'number') {
-          const distance = Math.abs(vote.answer - correctAnswer);
-          if (distance < minDistance) {
-            minDistance = distance;
-          }
-        }
-      });
-      
-      // Award points only to players with the closest answer
+      // Award points only to players within acceptable range
       session.votes.forEach(vote => {
         const player = session.players.find(p => p.id === vote.playerId);
         if (!player) return;
@@ -204,10 +195,10 @@ export function submitVote(sessionId: string, playerId: string, answer: number |
         // Remove token from available tokens
         player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
 
-        // Check if this player had the closest answer
+        // Check if this player's answer is within acceptable range
         if (typeof vote.answer === 'number') {
           const distance = Math.abs(vote.answer - correctAnswer);
-          if (distance === minDistance) {
+          if (distance <= acceptableRange) {
             player.score += vote.token;
             player.usedTokens.push(vote.token);
           }
@@ -243,22 +234,12 @@ export function processRoundResults(sessionId: string): GameSession | null {
   if (session.currentPhase === 'voting') {
     session.currentPhase = 'reveal';
 
-    // For numerical questions, only closest answers win
+    // For numerical questions, check against acceptable range
     if (session.currentQuestion?.type === 'numerical') {
       const correctAnswer = session.currentQuestion.correctAnswer;
+      const acceptableRange = session.currentQuestion.acceptableRange || (correctAnswer * 0.1);
       
-      // Find the closest distance
-      let minDistance = Infinity;
-      session.votes.forEach(vote => {
-        if (typeof vote.answer === 'number') {
-          const distance = Math.abs(vote.answer - correctAnswer);
-          if (distance < minDistance) {
-            minDistance = distance;
-          }
-        }
-      });
-      
-      // Award points only to players with the closest answer
+      // Award points only to players within acceptable range
       session.votes.forEach(vote => {
         const player = session.players.find(p => p.id === vote.playerId);
         if (!player) return;
@@ -266,10 +247,12 @@ export function processRoundResults(sessionId: string): GameSession | null {
         // Remove token from available tokens
         player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
 
-        // Check if this player had the closest answer
+        // Check if this player's answer is within acceptable range
         if (typeof vote.answer === 'number') {
           const distance = Math.abs(vote.answer - correctAnswer);
-          if (distance === minDistance) {
+          const isWithinRange = distance <= acceptableRange;
+          
+          if (isWithinRange) {
             player.score += vote.token;
             player.usedTokens.push(vote.token);
           }

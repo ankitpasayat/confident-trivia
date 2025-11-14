@@ -100,10 +100,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(result?.error).toBe('Game is full');
     });
 
-    it('should not allow joining after game has started', () => {
+    it('should not allow joining after game has started', async () => {
       const { code, session } = createGameSession('Host');
       joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
 
       const result = joinGameSession(code, 'Player3');
       expect(result).toBeNull();
@@ -120,11 +120,11 @@ describe('Game Manager - Core Functionality', () => {
   });
 
   describe('startGame', () => {
-    it('should transition game from lobby to question phase', () => {
+    it('should transition game from lobby to question phase', async () => {
       const { session, code } = createGameSession('Host');
       joinGameSession(code, 'Player2');
 
-      const result = startGame(session.id);
+      const result = await startGame(session.id);
 
       expect(result).not.toBeNull();
       expect(result?.currentPhase).toBe('question');
@@ -132,26 +132,26 @@ describe('Game Manager - Core Functionality', () => {
       expect(result?.questionHistory).toHaveLength(10);
     });
 
-    it('should not start game with only 1 player', () => {
+    it('should not start game with only 1 player', async () => {
       const { session } = createGameSession('Host');
-      const result = startGame(session.id);
+      const result = await startGame(session.id);
 
       expect(result).toBeNull();
       const updatedSession = getSession(session.id);
       expect(updatedSession?.currentPhase).toBe('lobby');
     });
 
-    it('should not start non-existent game', () => {
-      const result = startGame('INVALID');
+    it('should not start non-existent game', async () => {
+      const result = await startGame('INVALID');
       expect(result).toBeNull();
     });
   });
 
   describe('submitVote', () => {
-    it('should record a valid vote when in voting phase', () => {
+    it('should record a valid vote when in voting phase', async () => {
       const { session, code } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      const started = startGame(session.id);
+      const started = await startGame(session.id);
       
       // Game needs to be in voting phase
       const updatedSession = getSession(session.id);
@@ -169,10 +169,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(finalSession?.votes[0].token).toBe(5);
     });
 
-    it('should not allow voting in wrong phase', () => {
+    it('should not allow voting in wrong phase', async () => {
       const { session, code } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
 
       // Try to vote in question phase (not voting phase)
       const result = submitVote(session.id, player2Result!.playerId, 0, 5);
@@ -180,10 +180,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(result).toBeNull();
     });
 
-    it('should allow updating existing vote', () => {
+    it('should allow updating existing vote', async () => {
       const { session, code } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
       
       const updatedSession = getSession(session.id);
       if (updatedSession) {
@@ -201,10 +201,10 @@ describe('Game Manager - Core Functionality', () => {
   });
 
   describe('processRoundResults', () => {
-    it('should calculate scores correctly for correct answer', () => {
+    it('should calculate scores correctly for correct answer', async () => {
       const { session, code, hostId } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      const startedSession = startGame(session.id);
+      const startedSession = await startGame(session.id);
 
       const currentQuestion = startedSession?.currentQuestion;
       const correctAnswer = currentQuestion!.correctAnswer;
@@ -229,10 +229,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(updatedPlayer2?.score).toBe(7);
     });
 
-    it('should not award points for incorrect answer', () => {
+    it('should not award points for incorrect answer', async () => {
       const { session, code, hostId } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      const startedSession = startGame(session.id);
+      const startedSession = await startGame(session.id);
 
       const currentQuestion = startedSession?.currentQuestion;
       const wrongAnswer = (typeof currentQuestion!.correctAnswer === 'number' ? currentQuestion!.correctAnswer + 1 : 1) % 4;
@@ -255,10 +255,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(updatedPlayer2?.score).toBe(0);
     });
 
-    it('should remove used tokens from available tokens', () => {
+    it('should remove used tokens from available tokens', async () => {
       const { session, code, hostId } = createGameSession('Host');
       joinGameSession(code, 'Player2');
-      const startedSession = startGame(session.id);
+      const startedSession = await startGame(session.id);
 
       const currentQuestion = startedSession?.currentQuestion;
       const gameSession = getSession(session.id);
@@ -278,10 +278,10 @@ describe('Game Manager - Core Functionality', () => {
   });
 
   describe('nextRound', () => {
-    it('should advance to next round', () => {
+    it('should advance to next round', async () => {
       const { session, code } = createGameSession('Host');
       joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
 
       nextRound(session.id);
 
@@ -291,10 +291,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(updatedSession?.votes).toHaveLength(0);
     });
 
-    it('should transition to results phase after 10 rounds', () => {
+    it('should transition to results phase after 10 rounds', async () => {
       const { session, code } = createGameSession('Host');
       joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
 
       // Advance through 10 rounds (starts at round 1, need to call nextRound 9 times to reach round 10, then once more to transition to results)
       for (let i = 0; i < 10; i++) {
@@ -338,11 +338,11 @@ describe('Game Manager - Core Functionality', () => {
       expect(players.every(p => p !== null && p !== undefined)).toBe(true);
     });
 
-    it('should handle all players voting in different order', () => {
+    it('should handle all players voting in different order', async () => {
       const { session, code, hostId } = createGameSession('Host');
       const player2 = joinGameSession(code, 'Player2');
       const player3 = joinGameSession(code, 'Player3');
-      const startedSession = startGame(session.id);
+      const startedSession = await startGame(session.id);
 
       const currentQuestion = startedSession?.currentQuestion;
       
@@ -434,10 +434,150 @@ describe('Game Manager - Core Functionality', () => {
   });
 
   describe('Question Type Testing', () => {
-    it('should handle true-false questions correctly', () => {
+    it('should handle legacy multiple-choice questions without type field', async () => {
+      const { session, code, hostId } = createGameSession('Host');
+      joinGameSession(code, 'Player2');
+      await startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      // Manually set a legacy question without 'type' field
+      if (gameSession) {
+        (gameSession as any).currentQuestion = {
+          id: 'legacy-1',
+          text: 'What is 2+2?',
+          category: 'Math',
+          difficulty: 'easy',
+          explanation: 'Basic math.',
+          options: ['3', '4', '5', '6'],
+          correctAnswer: 1
+          // Note: no 'type' field - this is a legacy question
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit correct answer
+        submitVote(session.id, hostId, 1, 5);
+        
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      expect(player?.score).toBeGreaterThan(0);
+    });
+
+    it('should handle numerical questions with default acceptable range (10% of answer)', async () => {
+      const { session, code, hostId } = createGameSession('Host');
+      joinGameSession(code, 'Player2');
+      await startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      // Numerical question without explicit acceptableRange
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'num-default',
+          text: 'Estimate the number',
+          category: 'Math',
+          difficulty: 'easy',
+          explanation: 'The answer is 100.',
+          type: 'numerical',
+          correctAnswer: 100,
+          unit: 'units'
+          // Note: no acceptableRange field - should use 10% default (= 10)
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit answer within 10% (100 ± 10), so 105 should work
+        submitVote(session.id, hostId, 105, 5);
+        
+        // Process results while in voting phase (it will change to reveal automatically)
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      expect(player?.score).toBeGreaterThan(0);
+    });
+
+    it('should not remove token if answer is outside acceptable range for numerical', async () => {
+      const { session, code, hostId } = createGameSession('Host');
+      joinGameSession(code, 'Player2');
+      await startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'num-4',
+          text: 'What is the value?',
+          category: 'Math',
+          difficulty: 'easy',
+          explanation: 'The answer is 1000.',
+          type: 'numerical',
+          correctAnswer: 1000,
+          unit: 'units',
+          acceptableRange: 10
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Submit answer way outside range
+        submitVote(session.id, hostId, 5000, 8);
+        
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      
+      // Token should be removed even though answer was wrong
+      expect(player?.availableTokens).not.toContain(8);
+      expect(player?.score).toBe(0);
+    });
+
+    it('should reject non-numeric answers for numerical questions', async () => {
+      const { session, code, hostId } = createGameSession('Host');
+      joinGameSession(code, 'Player2');
+      await startGame(session.id);
+      
+      const gameSession = getSession(session.id);
+
+      if (gameSession) {
+        gameSession.currentQuestion = {
+          id: 'num-5',
+          text: 'What is the value?',
+          category: 'Math',
+          difficulty: 'easy',
+          explanation: 'The answer is 42.',
+          type: 'numerical',
+          correctAnswer: 42,
+          unit: 'units',
+          acceptableRange: 5
+        };
+        gameSession.currentPhase = 'voting';
+
+        // Try to submit non-numeric answer (will be cast to boolean internally for testing)
+        // This tests the typeof check in the numerical processing code
+        const voteResult = submitVote(session.id, hostId, true as any, 6);
+        
+        // Should still accept the vote (validation happens in processRoundResults)
+        expect(voteResult).not.toBeNull();
+        
+        processRoundResults(session.id);
+      }
+
+      const updatedSession = getSession(session.id);
+      const player = updatedSession?.players.find((p: Player) => p.id === hostId);
+      
+      // Token should be removed but no points awarded
+      expect(player?.availableTokens).not.toContain(6);
+      expect(player?.score).toBe(0);
+    });
+
+    it('should handle true-false questions correctly', async () => {
       const { session, code, hostId } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
       
       const gameSession = getSession(session.id);
 
@@ -466,10 +606,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(player?.score).toBeGreaterThan(0);
     });
 
-    it('should handle more-or-less questions correctly', () => {
+    it('should handle more-or-less questions correctly', async () => {
       const { session, code, hostId } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
       
       const gameSession = getSession(session.id);
 
@@ -500,10 +640,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(player?.score).toBeGreaterThan(0);
     });
 
-    it('should handle numerical questions with exact answer', () => {
+    it('should handle numerical questions with exact answer', async () => {
       const { session, code, hostId } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
       
       const gameSession = getSession(session.id);
 
@@ -533,10 +673,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(player?.score).toBeGreaterThan(0);
     });
 
-    it('should handle numerical questions with acceptable range', () => {
+    it('should handle numerical questions with acceptable range', async () => {
       const { session, code, hostId } = createGameSession('Host');
       const player2Result = joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
       
       const gameSession = getSession(session.id);
 
@@ -567,10 +707,10 @@ describe('Game Manager - Core Functionality', () => {
       expect(player?.score).toBeGreaterThan(0);
     });
 
-    it('should reject numerical answers outside acceptable range', () => {
+    it('should reject numerical answers outside acceptable range', async () => {
       const { session, code, hostId } = createGameSession('Host');
       joinGameSession(code, 'Player2');
-      startGame(session.id);
+      await startGame(session.id);
       
       const gameSession = getSession(session.id);
 

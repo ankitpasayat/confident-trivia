@@ -1,7 +1,11 @@
 import { Question } from '@/types/game';
+import { generateQuestionsWithOpenAI } from './openai-question-generator';
+import { generateQuestionsWithGemini } from './gemini-question-generator';
+import { logger } from './logger';
 
-// Question database - can be expanded significantly
-export const questions: Question[] = [
+// Fallback question database - used when AI generation is not available
+// These questions are only used in development or when no API key is set
+const fallbackQuestions: Question[] = [
   {
     id: 'q1',
     type: 'multiple-choice',
@@ -670,12 +674,53 @@ export const questions: Question[] = [
   },
 ];
 
-export function getRandomQuestions(count: number): Question[] {
+/**
+ * Get random questions - tries AI generation first, falls back to local questions
+ * Priority: Google Gemini (FREE) > OpenAI (paid) > Fallback questions
+ */
+export async function getRandomQuestions(count: number): Promise<Question[]> {
+  // Try Google Gemini first (FREE with generous limits!)
+  if (process.env.GOOGLE_API_KEY) {
+    try {
+      logger.info('Attempting to generate questions with Gemini (FREE)');
+      const questions = await generateQuestionsWithGemini({ count });
+      return questions;
+    } catch (error) {
+      logger.warn('Gemini generation failed, trying OpenAI', { error });
+      // Fall through to try OpenAI
+    }
+  }
+
+  // Try OpenAI if available (paid but cheap)
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      logger.info('Attempting to generate questions with OpenAI');
+      const questions = await generateQuestionsWithOpenAI({ count });
+      return questions;
+    } catch (error) {
+      logger.warn('OpenAI generation failed, falling back to local questions', { error });
+      // Fall through to use fallback questions
+    }
+  }
+
+  // If no API keys configured
+  if (!process.env.GOOGLE_API_KEY && !process.env.OPENAI_API_KEY) {
+    logger.info('No API keys set, using fallback questions');
+  }
+
+  // Fallback to local questions
+  return getRandomQuestionsFromFallback(count);
+}
+
+/**
+ * Get random questions from the fallback database
+ */
+function getRandomQuestionsFromFallback(count: number): Question[] {
   // Separate questions by type
-  const multipleChoice = questions.filter(q => q.type === 'multiple-choice');
-  const trueFalse = questions.filter(q => q.type === 'true-false');
-  const moreOrLess = questions.filter(q => q.type === 'more-or-less');
-  const numerical = questions.filter(q => q.type === 'numerical');
+  const multipleChoice = fallbackQuestions.filter(q => q.type === 'multiple-choice');
+  const trueFalse = fallbackQuestions.filter(q => q.type === 'true-false');
+  const moreOrLess = fallbackQuestions.filter(q => q.type === 'more-or-less');
+  const numerical = fallbackQuestions.filter(q => q.type === 'numerical');
   
   // Calculate distribution for a balanced mix
   // Target: 50% multiple-choice, 20% true-false, 20% more-or-less, 10% numerical
@@ -700,7 +745,7 @@ export function getRandomQuestions(count: number): Question[] {
   
   // If we don't have enough questions of certain types, fill with any remaining
   if (selected.length < count) {
-    const remaining = questions
+    const remaining = fallbackQuestions
       .filter(q => !selected.includes(q))
       .sort(() => Math.random() - 0.5)
       .slice(0, count - selected.length);
@@ -712,5 +757,8 @@ export function getRandomQuestions(count: number): Question[] {
 }
 
 export function getQuestionById(id: string): Question | undefined {
-  return questions.find(q => q.id === id);
+  return fallbackQuestions.find(q => q.id === id);
 }
+
+// Export questions for tests and other uses
+export const questions = fallbackQuestions;

@@ -6,17 +6,36 @@ A real-time multiplayer trivia game where players bet tokens (1-10) on their ans
 
 - **Real-time multiplayer** - 2-6 players using simple 4-letter game codes
 - **Confidence-based betting** - Strategic token management
+- **AI-Generated Questions** - Fresh trivia content every game using GPT-4
 - **Mobile-friendly** - Optimized for phones and tablets
 - **No database required** - In-memory sessions for quick games
 
 ## Quick Start
 
 ```bash
+# Install dependencies
 npm install
+
+# Optional: Set up FREE AI questions (Google Gemini)
+cp .env.example .env.local
+# Get FREE key: https://aistudio.google.com/app/apikey
+# Edit .env.local and add: GOOGLE_API_KEY=your-key-here
+
+# Run dev server
 npm run dev
 ```
 
 Visit `http://localhost:3000` to play.
+
+### AI Questions (Optional)
+
+Get fresh, AI-generated questions every game for FREE using Google Gemini:
+
+1. Get FREE API key: https://aistudio.google.com/app/apikey (no credit card needed)
+2. Add to `.env.local`: `GOOGLE_API_KEY=your-key-here`
+3. Restart dev server
+
+Without an API key, uses built-in fallback questions.
 
 ## How to Play
 
