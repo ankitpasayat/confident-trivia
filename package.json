@@ -17,9 +17,11 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:all": "npm run test:unit && npm run test:api && npm run test:components && npm run test:e2e",
-    "playwright:install": "playwright install --with-deps"
+    "playwright:install": "playwright install --with-deps",
+    "analyze-questions": "dotenv -e .env.local -e .env -- tsx scripts/analyze-question-distribution.ts"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -36,8 +38,10 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.9",
+    "dotenv-cli": "^11.0.0",
     "jsdom": "^27.2.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5",
     "vitest": "^4.0.9"
   }
