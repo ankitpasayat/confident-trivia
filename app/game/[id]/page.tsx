@@ -308,11 +308,25 @@ export default function GamePage() {
       return String(vote.answer);
     };
 
+    // For numerical questions, find the closest answer(s)
+    let minDistance = Infinity;
+    if (questionType === 'numerical' && typeof correctAnswer === 'number') {
+      session.votes.forEach(vote => {
+        if (typeof vote.answer === 'number') {
+          const distance = Math.abs(vote.answer - correctAnswer);
+          if (distance < minDistance) {
+            minDistance = distance;
+          }
+        }
+      });
+    }
+
     // Helper to check if answer is correct
     const isCorrect = (vote: any) => {
       if (questionType === 'numerical' && typeof vote.answer === 'number' && typeof correctAnswer === 'number') {
-        const range = ('acceptableRange' in question ? question.acceptableRange : correctAnswer * 0.1) || 0;
-        return Math.abs(vote.answer - correctAnswer) <= range;
+        // For numerical questions, only the closest answer(s) are correct
+        const distance = Math.abs(vote.answer - correctAnswer);
+        return distance === minDistance;
       }
       // Handle true/false with both boolean and number formats (backwards compatibility)
       if (questionType === 'true-false' && typeof correctAnswer === 'boolean') {

@@ -180,19 +180,55 @@ export function submitVote(sessionId: string, playerId: string, answer: number |
   if (session.votes.length === session.players.length) {
     session.currentPhase = 'reveal';
     // Process results immediately when all votes are in
-    session.votes.forEach(vote => {
-      const player = session.players.find(p => p.id === vote.playerId);
-      if (!player) return;
+    
+    // For numerical questions, only closest answers win
+    if (session.currentQuestion?.type === 'numerical') {
+      const correctAnswer = session.currentQuestion.correctAnswer;
+      
+      // Find the closest distance
+      let minDistance = Infinity;
+      session.votes.forEach(vote => {
+        if (typeof vote.answer === 'number') {
+          const distance = Math.abs(vote.answer - correctAnswer);
+          if (distance < minDistance) {
+            minDistance = distance;
+          }
+        }
+      });
+      
+      // Award points only to players with the closest answer
+      session.votes.forEach(vote => {
+        const player = session.players.find(p => p.id === vote.playerId);
+        if (!player) return;
 
-      // Remove token from available tokens
-      player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
+        // Remove token from available tokens
+        player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
 
-      // If answer is correct, add to score and used tokens
-      if (session.currentQuestion && isAnswerCorrect(session.currentQuestion, vote.answer)) {
-        player.score += vote.token;
-        player.usedTokens.push(vote.token);
-      }
-    });
+        // Check if this player had the closest answer
+        if (typeof vote.answer === 'number') {
+          const distance = Math.abs(vote.answer - correctAnswer);
+          if (distance === minDistance) {
+            player.score += vote.token;
+            player.usedTokens.push(vote.token);
+          }
+        }
+      });
+    } else {
+      // For non-numerical questions, use the standard correct/incorrect logic
+      session.votes.forEach(vote => {
+        const player = session.players.find(p => p.id === vote.playerId);
+        if (!player) return;
+
+        // Remove token from available tokens
+        player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
+
+        // If answer is correct, add to score and used tokens
+        if (session.currentQuestion && isAnswerCorrect(session.currentQuestion, vote.answer)) {
+          player.score += vote.token;
+          player.usedTokens.push(vote.token);
+        }
+      });
+    }
   }
 
   return session;
@@ -207,20 +243,54 @@ export function processRoundResults(sessionId: string): GameSession | null {
   if (session.currentPhase === 'voting') {
     session.currentPhase = 'reveal';
 
-    // Process each vote
-    session.votes.forEach(vote => {
-      const player = session.players.find(p => p.id === vote.playerId);
-      if (!player) return;
+    // For numerical questions, only closest answers win
+    if (session.currentQuestion?.type === 'numerical') {
+      const correctAnswer = session.currentQuestion.correctAnswer;
+      
+      // Find the closest distance
+      let minDistance = Infinity;
+      session.votes.forEach(vote => {
+        if (typeof vote.answer === 'number') {
+          const distance = Math.abs(vote.answer - correctAnswer);
+          if (distance < minDistance) {
+            minDistance = distance;
+          }
+        }
+      });
+      
+      // Award points only to players with the closest answer
+      session.votes.forEach(vote => {
+        const player = session.players.find(p => p.id === vote.playerId);
+        if (!player) return;
 
-      // Remove token from available tokens
-      player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
+        // Remove token from available tokens
+        player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
 
-      // If answer is correct, add to score and used tokens
-      if (isAnswerCorrect(session.currentQuestion!, vote.answer)) {
-        player.score += vote.token;
-        player.usedTokens.push(vote.token);
-      }
-    });
+        // Check if this player had the closest answer
+        if (typeof vote.answer === 'number') {
+          const distance = Math.abs(vote.answer - correctAnswer);
+          if (distance === minDistance) {
+            player.score += vote.token;
+            player.usedTokens.push(vote.token);
+          }
+        }
+      });
+    } else {
+      // Process each vote with standard logic for non-numerical questions
+      session.votes.forEach(vote => {
+        const player = session.players.find(p => p.id === vote.playerId);
+        if (!player) return;
+
+        // Remove token from available tokens
+        player.availableTokens = player.availableTokens.filter(t => t !== vote.token);
+
+        // If answer is correct, add to score and used tokens
+        if (isAnswerCorrect(session.currentQuestion!, vote.answer)) {
+          player.score += vote.token;
+          player.usedTokens.push(vote.token);
+        }
+      });
+    }
   }
 
   session.lastActivity = Date.now();
