@@ -23,6 +23,10 @@ const showQuestions = args.includes('--show') || args.includes('--once');
 const onceMode = args.includes('--once');
 const batchesIndex = args.indexOf('--batches');
 const customBatches = batchesIndex !== -1 ? parseInt(args[batchesIndex + 1]) : null;
+if (customBatches !== null && (isNaN(customBatches) || customBatches < 1)) {
+  console.error('❌ Error: --batches must be followed by a positive number');
+  process.exit(1);
+}
 
 const SAMPLE_SIZE = onceMode ? 1 : (customBatches || 3);
 const QUESTIONS_PER_BATCH = 10; // Questions per batch
