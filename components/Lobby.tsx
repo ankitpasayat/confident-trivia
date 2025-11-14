@@ -4,9 +4,10 @@ interface LobbyProps {
   session: GameSession;
   isHost: boolean;
   onStartGame: () => void;
+  isStarting?: boolean;
 }
 
-export function Lobby({ session, isHost, onStartGame }: LobbyProps) {
+export function Lobby({ session, isHost, onStartGame, isStarting = false }: LobbyProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black p-4">
       <div className="max-w-2xl mx-auto pt-8">
@@ -46,10 +47,15 @@ export function Lobby({ session, isHost, onStartGame }: LobbyProps) {
         {isHost ? (
           <button
             onClick={onStartGame}
-            disabled={session.players.length < 2}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg transform active:scale-95 transition-all disabled:cursor-not-allowed"
+            disabled={session.players.length < 2 || isStarting}
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg transform active:scale-95 transition-all disabled:cursor-not-allowed relative"
           >
-            {session.players.length < 2 ? 'Waiting for players...' : 'Start Game'}
+            {isStarting ? (
+              <span className="flex items-center justify-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Generating questions with AI...
+              </span>
+            ) : session.players.length < 2 ? 'Waiting for players...' : 'Start Game'}
           </button>
         ) : (
           <div className="text-center p-4 bg-gray-800/50 rounded-2xl">

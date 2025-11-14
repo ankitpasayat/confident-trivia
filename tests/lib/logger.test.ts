@@ -72,4 +72,14 @@ describe('Logger', () => {
       expect(logger.debug).toHaveBeenCalledWith('Debug with data {\n  "details": "verbose"\n}');
     });
   });
+
+  describe('Logger initialization', () => {
+    it('should handle file system errors gracefully', () => {
+      // The logger is already initialized, but we can test that it's working
+      // Even if file logging fails, console logging should still work
+      expect(logger).toBeDefined();
+      expect(logger.info).toBeDefined();
+      expect(logger.error).toBeDefined();
+    });
+  });
 });

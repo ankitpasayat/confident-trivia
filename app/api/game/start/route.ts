@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = startGame(sessionId);
+    const session = await startGame(sessionId);
 
     if (!session) {
       log.error(`[START] Cannot start game ${sessionId} - need at least 2 players`);

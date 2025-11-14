@@ -682,6 +682,30 @@ describe('API Routes Tests', () => {
       vi.restoreAllMocks();
     });
 
+    it('should return 500 on unexpected create error', async () => {
+      // Force an error by mocking createGameSession to throw
+      const { createGameSession: originalCreate } = await import('../../lib/game-manager');
+      const gameManagerModule = await import('../../lib/game-manager');
+      vi.spyOn(gameManagerModule, 'createGameSession').mockImplementation(() => {
+        throw new Error('Simulated error');
+      });
+
+      const request = createNextRequest('http://localhost/api/game/create', {
+        method: 'POST',
+        body: JSON.stringify({ hostName: 'Test' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await createGameRoute(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Failed to create game');
+
+      vi.restoreAllMocks();
+    });
+
     it('should handle errors gracefully in join route', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       
@@ -695,6 +719,28 @@ describe('API Routes Tests', () => {
       
       expect(response.status).toBeGreaterThanOrEqual(200);
       
+      vi.restoreAllMocks();
+    });
+
+    it('should return 500 on unexpected join error', async () => {
+      const gameManagerModule = await import('../../lib/game-manager');
+      vi.spyOn(gameManagerModule, 'joinGameSession').mockImplementation(() => {
+        throw new Error('Simulated error');
+      });
+
+      const request = createNextRequest('http://localhost/api/game/join', {
+        method: 'POST',
+        body: JSON.stringify({ code: 'TEST', playerName: 'Player' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await joinGameRoute(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Failed to join game');
+
       vi.restoreAllMocks();
     });
 
@@ -714,6 +760,28 @@ describe('API Routes Tests', () => {
       vi.restoreAllMocks();
     });
 
+    it('should return 500 on unexpected start error', async () => {
+      const gameManagerModule = await import('../../lib/game-manager');
+      vi.spyOn(gameManagerModule, 'startGame').mockImplementation(() => {
+        throw new Error('Simulated error');
+      });
+
+      const request = createNextRequest('http://localhost/api/game/start', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: 'test' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await startGameRoute(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Failed to start game');
+
+      vi.restoreAllMocks();
+    });
+
     it('should handle errors gracefully in vote route', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       
@@ -730,6 +798,28 @@ describe('API Routes Tests', () => {
       vi.restoreAllMocks();
     });
 
+    it('should return 500 on unexpected vote error', async () => {
+      const gameManagerModule = await import('../../lib/game-manager');
+      vi.spyOn(gameManagerModule, 'submitVote').mockImplementation(() => {
+        throw new Error('Simulated error');
+      });
+
+      const request = createNextRequest('http://localhost/api/game/vote', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: 'test', playerId: 'test', answer: 0, token: 5 }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await voteRoute(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Failed to submit vote');
+
+      vi.restoreAllMocks();
+    });
+
     it('should handle errors gracefully in phase route', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       
@@ -743,6 +833,28 @@ describe('API Routes Tests', () => {
       
       expect(response.status).toBeGreaterThanOrEqual(200);
       
+      vi.restoreAllMocks();
+    });
+
+    it('should return 500 on unexpected phase error', async () => {
+      const gameManagerModule = await import('../../lib/game-manager');
+      vi.spyOn(gameManagerModule, 'changePhase').mockImplementation(() => {
+        throw new Error('Simulated error');
+      });
+
+      const request = createNextRequest('http://localhost/api/game/phase', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: 'test', phase: 'lobby' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await phaseRoute(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Failed to change phase');
+
       vi.restoreAllMocks();
     });
   });

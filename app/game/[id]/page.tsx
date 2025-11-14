@@ -14,6 +14,7 @@ export default function GamePage() {
   const [playerId, setPlayerId] = useState<string>('');
   const [selectedAnswer, setSelectedAnswer] = useState<number | boolean | null>(null);
   const [selectedToken, setSelectedToken] = useState<number | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('playerId');
@@ -29,6 +30,7 @@ export default function GamePage() {
     if (s.currentPhase === 'question') {
       setSelectedAnswer(null);
       setSelectedToken(null);
+      setIsStarting(false);
     }
   }, []);
 
@@ -43,6 +45,9 @@ export default function GamePage() {
 
   const apiCall = async (endpoint: string, body: any) => {
     try {
+      if (endpoint === 'start') {
+        setIsStarting(true);
+      }
       const response = await fetch(`/api/game/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,10 +57,16 @@ export default function GamePage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error(`API call to ${endpoint} failed (${response.status}):`, errorData);
+        if (endpoint === 'start') {
+          setIsStarting(false);
+        }
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
     } catch (error) {
       console.error(`API call to ${endpoint} failed:`, error);
+      if (endpoint === 'start') {
+        setIsStarting(false);
+      }
       throw error;
     }
   };
@@ -85,6 +96,7 @@ export default function GamePage() {
         session={session} 
         isHost={isHost} 
         onStartGame={() => apiCall('start', { sessionId })}
+        isStarting={isStarting}
       />
     </>;
   }
@@ -95,7 +107,7 @@ export default function GamePage() {
       {connectionIndicator}
       <div className="max-w-2xl mx-auto pt-8">
         <div className="flex justify-between items-center mb-6">
-          <div className="text-sm text-gray-400">Round {session.currentRound}/{session.totalRounds}</div>
+          <div className="text-lg font-semibold">Round {session.currentRound}</div>
           <div className="text-sm font-medium px-3 py-1 bg-purple-500/20 border border-purple-500 rounded-full">
             {session.currentQuestion.category}
           </div>

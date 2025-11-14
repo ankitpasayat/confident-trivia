@@ -9,9 +9,8 @@ test.describe('Game Flow E2E Tests', () => {
     await page.click('button:has-text("Create Game")');
 
     // Wait for lobby and get game code
-    await expect(page.locator('text=Game Code')).toBeVisible();
     const gameCodeElement = page.getByTestId('game-code');
-    await expect(gameCodeElement).toBeVisible();
+    await expect(gameCodeElement).toBeVisible({ timeout: 10000 });
     const gameCode = await gameCodeElement.textContent();
     // Game code can include letters and numbers (excluding confusing chars like I, O, 0, 1)
     expect(gameCode).toMatch(/^[A-Z0-9]{4}$/);
@@ -41,9 +40,12 @@ test.describe('Game Flow E2E Tests', () => {
     await expect(startButton).toBeEnabled();
     await startButton.click();
 
+    // Wait for question generation to complete (button text changes)
+    await expect(page.locator('button:has-text("Generating questions with AI...")')).toBeVisible({ timeout: 5000 }).catch(() => {});
+    
     // Both should see question phase
-    await expect(page.locator('text=/Round 1/')).toBeVisible({ timeout: 10000 });
-    await expect(page2.locator('text=/Round 1/')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=/Round 1/')).toBeVisible({ timeout: 30000 });
+    await expect(page2.locator('text=/Round 1/')).toBeVisible({ timeout: 30000 });
 
     // Host clicks "Start Voting!"
     await page.click('button:has-text("Start Voting!")');
@@ -119,7 +121,7 @@ test.describe('Game Flow E2E Tests', () => {
     await page.click('button:has-text("Create Game")');
 
     // Wait for lobby
-    await expect(page.locator('text=Game Code')).toBeVisible();
+    await expect(page.getByTestId('game-code')).toBeVisible({ timeout: 10000 });
 
     // Start button should be disabled and show waiting message
     const startButton = page.locator('button:has-text("Waiting for players...")');
@@ -147,8 +149,8 @@ test.describe('Game Flow E2E Tests', () => {
     await page.fill('input[type="text"]', 'Host');
     await page.click('button:has-text("Create Game")');
 
-    await expect(page.locator('text=Game Code')).toBeVisible();
     const gameCodeElement = page.getByTestId('game-code');
+    await expect(gameCodeElement).toBeVisible({ timeout: 10000 });
     const gameCode = await gameCodeElement.textContent();
 
     // Add 5 more players (total 6) - close immediately after joining to free up resources
@@ -213,8 +215,8 @@ test.describe('Game Flow E2E Tests', () => {
     await page.fill('input[type="text"]', 'Host');
     await page.click('button:has-text("Create Game")');
 
-    await expect(page.locator('text=Game Code')).toBeVisible();
     const gameCodeElement = page.getByTestId('game-code');
+    await expect(gameCodeElement).toBeVisible({ timeout: 10000 });
     const gameCode = await gameCodeElement.textContent();
     
     // Wait for navigation to complete before accessing localStorage
@@ -276,8 +278,8 @@ test.describe('Game Flow E2E Tests', () => {
     await page.fill('input[type="text"]', 'Alice');
     await page.click('button:has-text("Create Game")');
 
-    await expect(page.locator('text=Game Code')).toBeVisible();
     const gameCodeElement = page.getByTestId('game-code');
+    await expect(gameCodeElement).toBeVisible({ timeout: 10000 });
     const gameCode = await gameCodeElement.textContent();
 
     const page2 = await context.newPage();
@@ -292,13 +294,16 @@ test.describe('Game Flow E2E Tests', () => {
     await expect(page.locator('text=Bob')).toBeVisible({ timeout: 10000 });
     await page.click('button:has-text("Start Game")');
 
+    // Wait for question generation to complete
+    await expect(page.locator('button:has-text("Generating questions with AI...")')).toBeVisible({ timeout: 5000 }).catch(() => {});
+
     // Play through 5 rounds (game default)
     for (let round = 1; round <= 5; round++) {
       console.log(`Playing round ${round}`);
       
       // Question phase
-      await expect(page.locator(`text=Round ${round}`)).toBeVisible({ timeout: 15000 });
-      await expect(page2.locator(`text=Round ${round}`)).toBeVisible({ timeout: 15000 });
+      await expect(page.locator(`text=Round ${round}`)).toBeVisible({ timeout: 30000 });
+      await expect(page2.locator(`text=Round ${round}`)).toBeVisible({ timeout: 30000 });
       
       // Host starts voting
       await page.click('button:has-text("Start Voting!")');
@@ -415,11 +420,9 @@ test.describe('UI/UX Tests', () => {
     await page.fill('input[type="text"]', 'Host');
     await page.click('button:has-text("Create Game")');
 
-    await expect(page.locator('text=Game Code')).toBeVisible();
-
     // Game code should be prominently displayed with large text
     const gameCodeElement = page.getByTestId('game-code');
-    await expect(gameCodeElement).toBeVisible();
+    await expect(gameCodeElement).toBeVisible({ timeout: 10000 });
 
     const fontSize = await gameCodeElement.evaluate(el => 
       window.getComputedStyle(el).fontSize
@@ -435,8 +438,8 @@ test.describe('UI/UX Tests', () => {
     await page.fill('input[type="text"]', 'Host');
     await page.click('button:has-text("Create Game")');
 
-    await expect(page.locator('text=Game Code')).toBeVisible();
     const gameCodeElement = page.getByTestId('game-code');
+    await expect(gameCodeElement).toBeVisible({ timeout: 10000 });
     const gameCode = await gameCodeElement.textContent();
 
     // Join with second player

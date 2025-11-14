@@ -222,6 +222,37 @@ describe('Component Tests', () => {
       const connectedElements = screen.getAllByText('Alice').concat(screen.getAllByText('Bob'));
       expect(connectedElements.length).toBeGreaterThan(0);
     });
+
+    it('should show loading state when starting game', () => {
+      const mockStartGame = vi.fn();
+      const mockSession: GameSession = {
+        id: 'session1',
+        code: 'ABCD',
+        hostId: 'player1',
+        players: mockPlayers,
+        currentPhase: 'lobby',
+        currentRound: 0,
+        totalRounds: 10,
+        currentQuestion: null,
+        votes: [],
+        questionHistory: [],
+        createdAt: Date.now(),
+        lastActivity: Date.now(),
+      };
+
+      render(
+        <Lobby
+          session={mockSession}
+          isHost={true}
+          onStartGame={mockStartGame}
+          isStarting={true}
+        />
+      );
+
+      expect(screen.getByText(/generating questions with ai/i)).toBeInTheDocument();
+      const startButton = screen.getByRole('button');
+      expect(startButton).toBeDisabled();
+    });
   });
 
   describe('Results Component', () => {
