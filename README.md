@@ -86,4 +86,6 @@ npm run build
 
 ## License
 
-MIT
+Proprietary License - Copyright (c) 2025 Ankit Pasayat. All rights reserved.
+
+See [LICENSE](LICENSE) for details. Personal non-commercial use only. Contact for commercial licensing.

@@ -15,6 +15,7 @@
     "real-time",
     "confidence-betting"
   ],
+  "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "dev": "next dev",
